@@ -352,6 +352,27 @@ int TileFunctions::luaTileGetTopCreature(lua_State* L) {
 	return 1;
 }
 
+int TileFunctions::luaTileSetTopCreature(lua_State* L) {
+	// tile:setTopCreature(creature)
+	std::shared_ptr<Tile> tile = getUserdataShared<Tile>(L, 1); // 1. Get the Tile object from Lua
+	if (!tile) {
+		lua_pushnil(L); // 2. If the tile is invalid, return nil
+		return 1;
+	}
+
+	std::shared_ptr<Thing> thing = getUserdataShared<Thing>(L, 2); // 3. Get the Creature object from Lua
+	std::shared_ptr<Creature> creature = getUserdataShared<Creature>(L, 2); // 3. Get the Creature object from Lua
+	if (!creature) {
+		lua_pushnil(L); // 4. If the creature is invalid, return nil
+		return 1;
+	}
+
+	tile->setTopCreature(creature, thing); // 5. Call the C++ setTopCreature function
+	lua_pushboolean(L, true); // 6. Return true to Lua to indicate success
+	return 1;
+}
+
+
 int TileFunctions::luaTileGetBottomVisibleCreature(lua_State* L) {
 	// tile:getBottomVisibleCreature(creature)
 	std::shared_ptr<Tile> tile = getUserdataShared<Tile>(L, 1);

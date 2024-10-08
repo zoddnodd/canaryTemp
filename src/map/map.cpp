@@ -427,7 +427,119 @@ void Map::moveCreature(const std::shared_ptr<Creature> &creature, const std::sha
 	newTile->postAddNotification(creature, oldTile, 0);
 	g_game().afterCreatureZoneChange(creature, fromZones, toZones);
 }
+/*
+void Tile::setTopCreature(const std::shared_ptr<Creature> &creature, std::shared_ptr<Thing> thing) {
+	auto oldTile = creature->getTile();
 
+	auto teleport = true;
+
+	Position oldPos = oldTile->getPosition();
+	Position newPos = oldTile->getPosition();
+
+	const auto &fromZones = oldTile->getZones();
+	const auto &toZones = oldTile->getZones();
+
+	if (auto ret = g_game().beforeCreatureZoneChange(creature, fromZones, toZones); ret != RETURNVALUE_NOERROR) {
+		return;
+	}
+
+	// bool teleport = forceTeleport || !newTile->getGround() || !Position::areInRange<1, 1, 0>(oldPos, newPos);
+	// NEW ADD
+	Spectators spectators;
+	if (!true && oldPos.z == newPos.z) {
+		int32_t minRangeX = MAP_MAX_VIEW_PORT_X;
+		int32_t maxRangeX = MAP_MAX_VIEW_PORT_X;
+		int32_t minRangeY = MAP_MAX_VIEW_PORT_Y;
+		int32_t maxRangeY = MAP_MAX_VIEW_PORT_Y;
+
+		if (oldPos.y > newPos.y) {
+			++minRangeY;
+		} else if (oldPos.y < newPos.y) {
+			++maxRangeY;
+		}
+
+		if (oldPos.x < newPos.x) {
+			++maxRangeX;
+		} else if (oldPos.x > newPos.x) {
+			++minRangeX;
+		}
+
+		spectators.find<Creature>(oldPos, true, minRangeX, maxRangeX, minRangeY, maxRangeY);
+	} else {
+		spectators.find<Creature>(oldPos, true);
+		spectators.find<Creature>(newPos, true);
+
+		auto playersSpectators = spectators.filter<Player>();
+
+		// Add all Spectators into a vector and after sending to the client, use this vector to change
+		// their stackpos positions.
+		std::vector<int32_t> oldStackPosVector;
+		oldStackPosVector.reserve(playersSpectators.size());
+		for (const auto &spec : playersSpectators) {
+			if (creature) {
+				// oldStackPosVector.push_back(10); //Caminhar sem animações(Necessita ajustes)
+				oldStackPosVector.push_back(oldTile->getClientIndexOfCreature(spec->getPlayer(), creature));
+			} else {
+				oldStackPosVector.push_back(-1);
+			}
+		}
+		// remove the creature(NEW ADD)
+		// oldTile->removeThing(creature, 0);
+
+		// remove the creature
+		oldTile->removeThing(creature, 0);
+
+		MapSector* old_sector = g_game().map.getMapSector(oldPos.x, oldPos.y);
+		MapSector* new_sector = g_game().map.getMapSector(newPos.x, newPos.y);
+
+		// Switch the node ownership
+		if (old_sector != new_sector) {
+			old_sector->removeCreature(creature);
+			new_sector->addCreature(creature);
+		}
+
+		// add the creature
+		oldTile->addThing(creature);
+
+		if (!teleport) {
+			if (oldPos.y > newPos.y) {
+				creature->setDirection(DIRECTION_NORTH);
+			} else if (oldPos.y < newPos.y) {
+				creature->setDirection(DIRECTION_SOUTH);
+			}
+
+			if (oldPos.x < newPos.x) {
+				creature->setDirection(DIRECTION_EAST);
+			} else if (oldPos.x > newPos.x) {
+				creature->setDirection(DIRECTION_WEST);
+			}
+		}
+
+		// send to client
+		size_t i = 0;
+		for (const auto &spectator : playersSpectators) {
+			// Use the correct stackpos
+			int32_t stackpos = oldStackPosVector[i++];
+			int32_t stackposne = oldStackPosVector.back();
+			if (stackpos != -1) {
+				const auto &player = spectator->getPlayer();
+
+				player->sendCreatureMove(creature, newPos, stackposne, oldPos, oldTile->getStackposOfCreature(player, creature), false);
+				player->sendTextMessage(MESSAGE_ATTENTION, "You took a Boat.first (sendCreatureMove)");
+			}
+		}
+
+		// event method
+		for (const auto &spectator : spectators) {
+			spectator->onCreatureMove(creature, oldTile, newPos, oldTile, oldPos, false);
+		}
+
+		oldTile->postRemoveNotification(creature, oldTile, 0);
+		oldTile->postAddNotification(creature, oldTile, 0);
+		g_game().afterCreatureZoneChange(creature, fromZones, toZones);
+	}
+}
+*/
 bool Map::canThrowObjectTo(const Position &fromPos, const Position &toPos, const SightLines_t lineOfSight /*= SightLine_CheckSightLine*/, const int32_t rangex /*= Map::maxClientViewportX*/, const int32_t rangey /*= Map::maxClientViewportY*/) {
 	// z checks
 	// underground 8->15

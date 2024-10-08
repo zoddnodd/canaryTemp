@@ -224,6 +224,7 @@ public:
 	void removeThing(std::shared_ptr<Thing> thing, uint32_t count) override final;
 
 	void removeCreature(std::shared_ptr<Creature> creature);
+	void setTopCreature(const std::shared_ptr<Creature> &creature, std::shared_ptr<Thing> thing);
 
 	int32_t getThingIndex(std::shared_ptr<Thing> thing) const override final;
 	size_t getFirstIndex() const override final;

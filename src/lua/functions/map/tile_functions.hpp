@@ -34,6 +34,8 @@ public:
 
 		registerMethod(L, "Tile", "getBottomCreature", TileFunctions::luaTileGetBottomCreature);
 		registerMethod(L, "Tile", "getTopCreature", TileFunctions::luaTileGetTopCreature);
+		registerMethod(L, "Tile", "setTopCreature", TileFunctions::luaTileSetTopCreature);
+
 		registerMethod(L, "Tile", "getBottomVisibleCreature", TileFunctions::luaTileGetBottomVisibleCreature);
 		registerMethod(L, "Tile", "getTopVisibleCreature", TileFunctions::luaTileGetTopVisibleCreature);
 
@@ -78,6 +80,7 @@ private:
 
 	static int luaTileGetBottomCreature(lua_State* L);
 	static int luaTileGetTopCreature(lua_State* L);
+	static int luaTileSetTopCreature(lua_State* L);
 	static int luaTileGetBottomVisibleCreature(lua_State* L);
 	static int luaTileGetTopVisibleCreature(lua_State* L);
 
