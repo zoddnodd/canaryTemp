@@ -20,6 +20,10 @@
 #include "io/iomap.hpp"
 #include "map/spectators.hpp"
 #include "enums/account_type.hpp"
+#include "server/network/protocol/protocolgame.hpp"
+#include "declarations.hpp"
+#include "game/scheduling/dispatcher.hpp"
+#include "lib/metrics/metrics.hpp"
 
 auto real_nullptr_tile = std::make_shared<StaticTile>(0xFFFF, 0xFFFF, 0xFF);
 const std::shared_ptr<Tile> &Tile::nullptr_tile = real_nullptr_tile;
@@ -244,16 +248,17 @@ std::shared_ptr<Creature> Tile::getTopCreature() const {
 void Tile::setTopCreature(const std::shared_ptr<Creature> &creature, std::shared_ptr<Thing> thing) {
 	auto oldTile = creature->getTile();
 
+	bool teleport = false;
+
 	Position oldPos = oldTile->getPosition();
 	Position newPos = oldTile->getPosition();
 
 	const auto &fromZones = oldTile->getZones();
 	const auto &toZones = oldTile->getZones();
+
 	if (auto ret = g_game().beforeCreatureZoneChange(creature, fromZones, toZones); ret != RETURNVALUE_NOERROR) {
 		return;
 	}
-
-	// bool teleport = forceTeleport || !newTile->getGround() || !Position::areInRange<1, 1, 0>(oldPos, newPos);
 
 	auto spectators = Spectators()
 						  .find<Creature>(oldPos, true)
@@ -264,6 +269,9 @@ void Tile::setTopCreature(const std::shared_ptr<Creature> &creature, std::shared
 	// Add all Spectators into a vector and after sending to the client, use this vector to change
 	// their stackpos positions.
 	std::vector<int32_t> oldStackPosVector;
+	oldStackPosVector.reserve(playersSpectators.size());
+
+
 	for (const auto &spec : playersSpectators) {
 		if (creature) {
 			// oldStackPosVector.push_back(10); //Caminhar sem animações(Necessita ajustes)
@@ -273,15 +281,19 @@ void Tile::setTopCreature(const std::shared_ptr<Creature> &creature, std::shared
 		}
 	}
 	// remove the creature
-	// oldTile->removeThing(creature, 0);
+	//oldTile->removeThing(thing, 0);
 
 	MapSector* old_sector = g_game().map.getMapSector(oldPos.x, oldPos.y);
 	MapSector* new_sector = g_game().map.getMapSector(newPos.x, newPos.y);
 
 	// Switch the node ownership
 	if (old_sector != new_sector) {
-		old_sector->removeCreature(creature);
-		new_sector->addCreature(creature);
+		
+
+		//old_sector->removeCreature(creature);
+		//new_sector->addCreature(creature);
+		
+
 	}
 
 	// send to client
@@ -289,23 +301,31 @@ void Tile::setTopCreature(const std::shared_ptr<Creature> &creature, std::shared
 	for (const auto &spectator : playersSpectators) {
 		// Use the correct stackpos
 		int32_t stackpos = oldStackPosVector[i++];
-		int32_t stackposne = oldStackPosVector.back();
+		int32_t stackposne = oldStackPosVector[1];
+		int32_t stackposback = oldStackPosVector.back();
 		if (stackpos != -1) {
 			const auto &player = spectator->getPlayer();
 
+
 			player->sendCreatureMove(creature, newPos, stackposne, oldPos, oldTile->getStackposOfCreature(player, creature), false);
 			player->sendTextMessage(MESSAGE_ATTENTION, "You took a Boat.first (sendCreatureMove)");
+
 		}
 	}
+	
 
-	// event method
-	for (const auto &spectator : spectators) {
+
+	// event method (const auto &spectator : spectators)
+	for (const auto &spectator : Spectators().find<Player>(creature->getPosition(), true)) {
 		spectator->onCreatureMove(creature, oldTile, newPos, oldTile, oldPos, false);
 	}
+
 
 	oldTile->postRemoveNotification(creature, oldTile, 0);
 	oldTile->postAddNotification(creature, oldTile, 0);
 	g_game().afterCreatureZoneChange(creature, fromZones, toZones);
+
+
 }
 std::shared_ptr<Creature> Tile::getBottomCreature() const {
 	if (const CreatureVector* creatures = getCreatures()) {
